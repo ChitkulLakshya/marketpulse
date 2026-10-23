@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+data/exports/*.csv
+data/exports/*.txt
+.streamlit/secrets.toml
+secrets.toml
+node_modules/
+web/node_modules/
+web/dist/
+dist/
+.env
+.env.*
+*.log
