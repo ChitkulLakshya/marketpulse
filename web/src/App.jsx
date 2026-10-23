@@ -26,7 +26,10 @@ export default function App() {
     try {
       setError(null);
       const p = await loadPortfolio();
-      const [global, fng] = await Promise.all([fetchGlobal(), fetchFng()]);
+      const [global, fng] = await Promise.all([
+        fetchGlobal().catch(() => null),
+        fetchFng().catch(() => null),
+      ]);
       setData(p);
       setExtra({ global, fng });
       setUpdatedAt(new Date());
@@ -37,7 +40,10 @@ export default function App() {
 
   useEffect(() => {
     load();
-    const t = setInterval(async () => {
+  }, []);
+
+  useEffect(() => {
+    const refresh = setInterval(async () => {
       try {
         const markets = await fetchMarkets();
         setData((d) => (d ? { ...d, markets } : d));
@@ -46,15 +52,21 @@ export default function App() {
         /* keep last data */
       }
     }, REFRESH_MS);
-    return () => clearInterval(t);
+    return () => clearInterval(refresh);
   }, []);
+
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => load(), 60_000);
+    return () => clearTimeout(t);
+  }, [error]);
 
   if (error)
     return (
       <div className="card error-card" style={{ marginTop: 40 }}>
         <h3 style={{ color: "#ff8585" }}>🛑 Live feed unreachable</h3>
         <p className="sub">
-          {error} — CoinGecko or your network is rate-limiting. Retrying in 60s…
+          {error} · <b>auto-retrying in 60s…</b>
         </p>
         <button className="select" onClick={load}>
           Retry now

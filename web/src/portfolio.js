@@ -113,18 +113,19 @@ export function dailyReturns(p, lastN = 31) {
 export async function loadPortfolio() {
   const markets = await fetchMarkets();
   const list = WATCHLIST.filter((id) => markets.some((m) => m.id === id));
-  const entries = await Promise.all(
-    list.map(async (id) => {
-      try {
-        return [id, historyToSeries(await fetchHistory(id, 365))];
-      } catch {
-        return [id, null];
-      }
-    })
-  );
+  const entries = [];
+  const stagger = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (const id of list) {
+    try {
+      entries.push([id, historyToSeries(await fetchHistory(id, 365))]);
+    } catch {
+      entries.push([id, null]);
+    }
+    await stagger(250);
+  }
   const histories = Object.fromEntries(entries.filter(([, s]) => s));
   const portfolio = buildPortfolio(histories);
-  if (!portfolio) throw new Error("not enough history data");
+  if (!portfolio) throw new Error("CoinGecko returned too little history — try again in a minute");
   portfolio.markets = markets;
   return portfolio;
 }
